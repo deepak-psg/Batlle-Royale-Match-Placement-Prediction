@@ -1,0 +1,38 @@
+{
+  "1. Full Feature Set": {
+    "num_features": 96,
+    "mae": 0.03712786408253995,
+    "rmse": 0.05127252504958991,
+    "train_time_sec": 22.070924282073975
+  },
+  "2. Ablation: No Team Aggregates": {
+    "num_features": 60,
+    "mae": 0.045733516829772516,
+    "rmse": 0.06471975300595477,
+    "train_time_sec": 30.49486255645752
+  },
+  "3. Ablation: No Match-Relative": {
+    "num_features": 72,
+    "mae": 0.04387923600939398,
+    "rmse": 0.06099423876123334,
+    "train_time_sec": 29.211982011795044
+  },
+  "4. Ablation: No Efficiency Ratios": {
+    "num_features": 87,
+    "mae": 0.03711293377870707,
+    "rmse": 0.051280707464271165,
+    "train_time_sec": 30.121850967407227
+  },
+  "5. Baseline: Raw Features Only": {
+    "num_features": 24,
+    "mae": 0.05832997980569999,
+    "rmse": 0.08410414294473646,
+    "train_time_sec": 5.354472875595093
+  },
+  "6. Leakage Study: No Survival Proxies": {
+    "num_features": 59,
+    "mae": 0.037796276633930495,
+    "rmse": 0.05242015511883995,
+    "train_time_sec": 26.53905963897705
+  }
+}
