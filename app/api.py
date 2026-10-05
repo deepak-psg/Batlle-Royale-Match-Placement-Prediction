@@ -35,6 +35,10 @@ static_path = Path(__file__).resolve().parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
+reports_path = Path(__file__).resolve().parent.parent / "reports"
+if reports_path.exists():
+    app.mount("/reports", StaticFiles(directory=str(reports_path)), name="reports")
+
 @app.get("/")
 def get_index():
     index_file = static_path / "index.html"
