@@ -1,0 +1,39 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Data files (keep raw & processed data out of git tracking)
+data/raw/*.csv
+data/processed/*.parquet
+data/processed/*.feather
+data/processed/*.csv
+data/processed/splits/
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# MLflow and logs
+mlruns/
+.mlflow/
+*.log
+
+# Models & artifacts
+models/*.pkl
+models/*.joblib
+!models/lgbm_model.joblib
+models/*.txt
+models/*.onnx
+
+# Jupyter / VS Code
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
