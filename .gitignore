@@ -1,3 +1,13 @@
+# Data files (keep raw & processed data out of git tracking due to size)
+data/raw/*.csv
+data/raw/*.zip
+data/processed/*.parquet
+data/processed/*.feather
+data/processed/*.csv
+data/processed/splits/
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
 # Python artifacts
 __pycache__/
 *.py[cod]
@@ -8,15 +18,6 @@ env/
 venv/
 .venv/
 
-# Data files (keep raw & processed data out of git tracking)
-data/raw/*.csv
-data/processed/*.parquet
-data/processed/*.feather
-data/processed/*.csv
-data/processed/splits/
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-
 # MLflow and logs
 mlruns/
 .mlflow/
@@ -25,15 +26,12 @@ mlruns/
 # Models & artifacts
 models/*.pkl
 models/*.joblib
-!models/lgbm_model.joblib
 models/*.txt
 models/*.onnx
 
-# Jupyter / VS Code
+# Jupyter / IDE / OS
 .ipynb_checkpoints/
 .vscode/
 .idea/
-
-# OS files
 .DS_Store
 Thumbs.db
