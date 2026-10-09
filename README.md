@@ -16,7 +16,7 @@ This project delivers an end-to-end supervised regression pipeline that predicts
 3. **Progressive 3-Model Benchmark**:
    - **Baseline:** Linear Regression (MAE: `0.0533`, R²: `0.9418`)
    - **Ensemble:** Random Forest Regressor (MAE: `0.0435`, R²: `0.9604`)
-   - **Primary Model:** LightGBM Regressor (MAE: `0.0377`, R²: `0.9705`) — **Top Performing Model**
+   - **Primary Model:** XGBoost Regressor (MAE: `0.0372`, R²: `0.9718`) — **Top Performing Model**
 4. **Model Interpretability with SHAP (SHapley Additive exPlanations)**, deciphering the exact behavioral mechanisms driving survival.
 5. **Interactive Streamlit Web Application** featuring tactical presets, real-time multi-model inference, and dynamic local SHAP feature attributions.
 
@@ -28,9 +28,9 @@ All three models were evaluated on the exact same held-out test set comprising *
 
 | Model Architecture | Test MAE (Primary) ⬇️ | Test RMSE ⬇️ | Test R² Score ⬆️ | Training Time | Primary Advantages & Findings |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Linear Regression** *(Baseline)* | `0.0533` | `0.0741` | `0.9418` | ~11.4s | Establishes a fast baseline; captures linear correlations but misses non-linear team dynamics. |
-| **Random Forest Regressor** *(Ensemble)* | `0.0435` | `0.0612` | `0.9604` | ~83.4s | Substantial non-linear improvement; captures tree splits across movement and combat thresholds. |
-| **LightGBM Regressor** *(Primary Model)* | **`0.0377`** | **`0.0528`** | **`0.9705`** | ~90.4s | **Decisive winner across all metrics.** Directly minimizes MAE (`regression_l1`), scales to large-scale data, handles high-dimensional interactions. |
+| **Linear Regression** *(Baseline)* | `0.0533` | `0.0741` | `0.9418` | ~8.2s | Establishes a fast baseline; captures linear correlations but misses non-linear team dynamics. |
+| **Random Forest Regressor** *(Ensemble)* | `0.0435` | `0.0612` | `0.9604` | ~71.6s | Substantial non-linear improvement; captures tree splits across movement and combat thresholds. |
+| **XGBoost Regressor** *(Primary Model)* | **`0.0372`** | **`0.0516`** | **`0.9718`** | ~116.2s | **Decisive winner across all metrics.** Directly minimizes MAE (`reg:absoluteerror`), scales via histogram binning (`tree_method='hist'`), and captures complex feature interactions. |
 
 > **Evaluation Visualizations:** Generated plots comparing MAE, RMSE, and R² are saved in `reports/figures/model_comparison.png`.
 
@@ -68,7 +68,7 @@ Over `[matchId, groupId]`, calculates `mean`, `max`, `min`, and `sum` across tea
 
 ## 🧠 Model Interpretability & SHAP Insights
 
-Using **TreeSHAP** (`shap.TreeExplainer`) on the champion LightGBM model, we analyzed global feature attributions across held-out matches:
+Using **TreeSHAP** (`shap.TreeExplainer`) on the champion XGBoost model, we analyzed global feature attributions across held-out matches:
 
 ### Top Placement Drivers
 1. **`killPlace_team_max` & `killPlace_match_rank_perc`:** The player's kill ranking within their match is the single strongest indicator of placement.
@@ -90,7 +90,7 @@ The interactive web interface is designed with a sleek tactical dark theme and i
   - 🏕️ *Tactical Snake / Camper* (high stealth walk distance, low combat engagement, high heals)
   - 💥 *Hot-Drop Rusher* (early high kills, low movement, early elimination risk)
   - 🏥 *Combat Medic* (high heals, revives, support coordination)
-- **Multi-Model Comparison:** Instant side-by-side placement percentile estimates from LightGBM, Random Forest, and Linear Regression.
+- **Multi-Model Comparison:** Instant side-by-side placement percentile estimates from XGBoost, Random Forest, and Linear Regression.
 - **Local SHAP Feature Breakdown:** An interactive bar chart dynamically explaining exactly which stats pushed the player's prediction up (+) or down (-).
 - **Benchmark Dashboard:** Interactive inspection of model metrics, feature importance rankings, and global SHAP beeswarm distributions.
 
@@ -113,7 +113,7 @@ python preprocess_pipeline.py
 ```
 
 ### 3. Train Models & Generate Visualizations
-To train Linear Regression, Random Forest, and LightGBM, compute evaluation metrics, and generate SHAP plots:
+To train Linear Regression, Random Forest, and XGBoost, compute evaluation metrics, and generate SHAP plots:
 
 ```bash
 python train_models.py
@@ -151,7 +151,7 @@ Batlle-Royale-Match-Placement-Prediction/
 ├── models/
 │   ├── linear_regression.joblib       # Trained baseline model
 │   ├── random_forest.joblib           # Trained ensemble model
-│   ├── lightgbm_model.joblib          # Trained primary model (Champion)
+│   ├── xgboost_model.joblib           # Trained primary model (Champion)
 │   ├── shap_explainer.joblib          # Pre-computed TreeSHAP explainer
 │   ├── feature_names.json             # 97 aligned feature names
 │   ├── benchmark_stats.json           # Match lobby averages for inference
@@ -161,6 +161,6 @@ Batlle-Royale-Match-Placement-Prediction/
 └── reports/
     └── figures/
         ├── model_comparison.png       # Comparative MAE, RMSE, R² bar plots
-        ├── feature_importance.png     # Top 20 LightGBM gain features
+        ├── feature_importance.png     # Top 20 XGBoost gain features
         └── shap_summary_plot.png      # Global SHAP beeswarm summary plot
 ```

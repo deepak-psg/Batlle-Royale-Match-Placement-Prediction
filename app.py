@@ -1,6 +1,6 @@
 """
 Battle Royale Match Placement Prediction - Interactive Web Application
-Built with Streamlit, LightGBM, Random Forest, Scikit-Learn, and SHAP.
+Built with Streamlit, XGBoost, Random Forest, Scikit-Learn, and SHAP.
 Author: Deepak R (24PD09)
 """
 
@@ -111,7 +111,7 @@ st.markdown("""
 @st.cache_resource
 def load_models_and_artifacts():
     """Load pre-trained models, feature names, benchmarks, and SHAP explainer."""
-    lgb_model = joblib.load("models/lightgbm_model.joblib")
+    xgb_model = joblib.load("models/xgboost_model.joblib")
     rf_model = joblib.load("models/random_forest.joblib")
     lr_model = joblib.load("models/linear_regression.joblib")
     explainer = joblib.load("models/shap_explainer.joblib")
@@ -128,7 +128,7 @@ def load_models_and_artifacts():
     feat_imp = pd.read_csv("models/feature_importances.csv")
     
     return {
-        "lgb": lgb_model,
+        "xgb": xgb_model,
         "rf": rf_model,
         "lr": lr_model,
         "explainer": explainer,
@@ -457,7 +457,7 @@ with tab1:
             )
             model_choice = st.radio(
                 "Predictive Model to Use:",
-                ["LightGBM (Primary - Recommended)", "Random Forest (Ensemble)", "Linear Regression (Baseline)", "Compare All 3 Models"],
+                ["XGBoost (Primary - Recommended)", "Random Forest (Ensemble)", "Linear Regression (Baseline)", "Compare All 3 Models"],
                 horizontal=False
             )
 
@@ -484,13 +484,13 @@ with tab1:
     input_df = build_feature_vector(raw_inputs)
 
     # Model Predictions
-    pred_lgb = float(np.clip(artifacts["lgb"].predict(input_df)[0], 0.0, 1.0))
+    pred_xgb = float(np.clip(artifacts["xgb"].predict(input_df)[0], 0.0, 1.0))
     pred_rf = float(np.clip(artifacts["rf"].predict(input_df)[0], 0.0, 1.0))
     pred_lr = float(np.clip(artifacts["lr"].predict(input_df)[0], 0.0, 1.0))
     
-    if "LightGBM" in model_choice:
-        chosen_pred = pred_lgb
-        model_name = "LightGBM Regressor"
+    if "XGBoost" in model_choice:
+        chosen_pred = pred_xgb
+        model_name = "XGBoost Regressor"
     elif "Random Forest" in model_choice:
         chosen_pred = pred_rf
         model_name = "Random Forest Regressor"
@@ -498,8 +498,8 @@ with tab1:
         chosen_pred = pred_lr
         model_name = "Linear Regression"
     else:
-        chosen_pred = pred_lgb
-        model_name = "LightGBM (Ensemble Primary)"
+        chosen_pred = pred_xgb
+        model_name = "XGBoost (Ensemble Primary)"
 
     tier_text, tier_color, tier_badge = get_tier_info(chosen_pred)
 
@@ -522,9 +522,9 @@ with tab1:
     with res_col2:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-card-title">LightGBM</div>
-            <div class="metric-card-value" style="color: #38BDF8;">{pred_lgb * 100:.1f}%</div>
-            <div class="badge-tier">MAE: 0.0377</div>
+            <div class="metric-card-title">XGBoost</div>
+            <div class="metric-card-value" style="color: #38BDF8;">{pred_xgb * 100:.1f}%</div>
+            <div class="badge-tier">MAE: 0.0372</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -646,10 +646,10 @@ with tab2:
     
     with vis_col1:
         st.markdown("#### 1. Three-Model Comparative Performance")
-        st.image("reports/figures/model_comparison.png", caption="Linear Regression vs. Random Forest vs. LightGBM on Out-of-Sample Test Set", use_container_width=True)
+        st.image("reports/figures/model_comparison.png", caption="Linear Regression vs. Random Forest vs. XGBoost on Out-of-Sample Test Set", use_container_width=True)
         
     with vis_col2:
-        st.markdown("#### 2. Top 20 Feature Importances (LightGBM Gain)")
+        st.markdown("#### 2. Top 20 Feature Importances (XGBoost Gain)")
         st.image("reports/figures/feature_importance.png", caption="Total Information Gain of Top Engineered Features", use_container_width=True)
 
     st.markdown("---")
@@ -707,7 +707,8 @@ with tab3:
     - **Models:**
       1. `Linear Regression` (Baseline — MAE: `0.0533`)
       2. `Random Forest Regressor` (Ensemble — MAE: `0.0435`)
-      3. `LightGBM Regressor` (Primary — MAE: `0.0377`, **Best Accuracy**)
+      3. `XGBoost Regressor` (Primary — MAE: `0.0372`, **Best Accuracy**)
     - **Interpretability:** TreeSHAP (`shap.TreeExplainer`) on gradient boosted trees.
     - **Developed by:** **Deepak R (24PD09)**
     """)
+

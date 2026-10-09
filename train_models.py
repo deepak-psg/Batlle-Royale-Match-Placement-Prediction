@@ -3,7 +3,7 @@ Battle Royale Match Placement Prediction - Model Training Pipeline
 Trains 3 Progressive Models:
 1. Linear Regression (Baseline)
 2. Random Forest Regressor (Ensemble)
-3. LightGBM Regressor (Primary/Final Model)
+3. XGBoost Regressor (Primary/Final Model)
 
 Evaluates on strictly separated 20% held-out test matches using MAE, RMSE, and R2.
 Performs SHAP interpretability and saves model artifacts and visual reports.
@@ -25,7 +25,7 @@ import seaborn as sns
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import lightgbm as lgb
+import xgboost as xgb
 import shap
 
 
@@ -36,7 +36,7 @@ Path("reports/figures").mkdir(parents=True, exist_ok=True)
 MAPPING_MATCH_TYPE = {'solo': 0, 'duo': 1, 'squad': 2, 'custom': 3}
 
 
-def load_dataset(n_train_matches: int = 15000, n_test_matches: int = 3000, seed: int = 42):
+def load_dataset(n_train_matches: int = 12000, n_test_matches: int = 3000, seed: int = 42):
     """
     Load features from parquet using matchId splits.
     Uses representative sample of matches to fit within system memory constraints while
@@ -149,38 +149,39 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, feature_cols):
     print(f"Saved Random Forest model. Train time: {rf_train_time:.2f}s")
 
     # -------------------------------------------------------------
-    # Model 3: LightGBM Regressor (Primary/Final Model)
+    # Model 3: XGBoost Regressor (Primary/Final Model)
     # -------------------------------------------------------------
-    print("\n[4/5] Training Model 3: LightGBM Regressor (Primary/Final Model)...")
+    print("\n[4/5] Training Model 3: XGBoost Regressor (Primary/Final Model)...")
     t0 = time.time()
-    lgb_model = lgb.LGBMRegressor(
-        objective='regression_l1',  # Directly optimize MAE
+    xgb_model = xgb.XGBRegressor(
+        objective='reg:absoluteerror',  # Directly optimize MAE (L1 loss)
         n_estimators=450,
         learning_rate=0.06,
-        num_leaves=63,
-        max_depth=-1,
+        max_depth=7,
         subsample=0.8,
         colsample_bytree=0.8,
+        tree_method='hist',             # High-speed histogram binning
         n_jobs=-1,
         random_state=42,
-        importance_type='gain'
+        importance_type='gain',
+        early_stopping_rounds=30
     )
-    lgb_model.fit(
+    xgb_model.fit(
         X_train, y_train,
         eval_set=[(X_test, y_test)],
-        callbacks=[lgb.early_stopping(stopping_rounds=30, verbose=False)]
+        verbose=False
     )
-    lgb_train_time = time.time() - t0
-    y_pred_lgb = lgb_model.predict(X_test)
-    eval_lgb = evaluate_predictions(y_test, y_pred_lgb, "LightGBM")
-    results["LightGBM"] = {
-        "MAE": eval_lgb["mae"],
-        "RMSE": eval_lgb["rmse"],
-        "R2": eval_lgb["r2"],
-        "train_time_sec": round(lgb_train_time, 2)
+    xgb_train_time = time.time() - t0
+    y_pred_xgb = xgb_model.predict(X_test)
+    eval_xgb = evaluate_predictions(y_test, y_pred_xgb, "XGBoost")
+    results["XGBoost"] = {
+        "MAE": eval_xgb["mae"],
+        "RMSE": eval_xgb["rmse"],
+        "R2": eval_xgb["r2"],
+        "train_time_sec": round(xgb_train_time, 2)
     }
-    joblib.dump(lgb_model, "models/lightgbm_model.joblib")
-    print(f"Saved LightGBM model. Train time: {lgb_train_time:.2f}s")
+    joblib.dump(xgb_model, "models/xgboost_model.joblib")
+    print(f"Saved XGBoost model. Train time: {xgb_train_time:.2f}s")
 
     # Save metrics summary
     with open("models/metrics_summary.json", "w") as f:
@@ -190,7 +191,7 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, feature_cols):
     # Interpretability & SHAP Analysis
     # -------------------------------------------------------------
     print("\n[5/5] Performing Interpretability & SHAP Analysis...")
-    explain_and_plot(lgb_model, X_test, feature_cols, results)
+    explain_and_plot(xgb_model, X_test, feature_cols, results)
 
     print("\n================ Training & Evaluation Complete! ================")
     summary_df = pd.DataFrame(results).T
@@ -198,10 +199,10 @@ def train_and_evaluate(X_train, y_train, X_test, y_test, feature_cols):
     summary_df.to_csv("models/metrics_summary.csv")
 
 
-def explain_and_plot(lgb_model, X_test, feature_cols, results):
+def explain_and_plot(xgb_model, X_test, feature_cols, results):
     """Generate SHAP values, feature importance plots, and model comparison charts."""
     # 1. Feature Importance (Gain)
-    importances = lgb_model.feature_importances_
+    importances = xgb_model.feature_importances_
     feat_imp = pd.DataFrame({
         'feature': feature_cols,
         'importance': importances
@@ -210,8 +211,8 @@ def explain_and_plot(lgb_model, X_test, feature_cols, results):
 
     plt.figure(figsize=(10, 8))
     top20 = feat_imp.head(20)
-    sns.barplot(data=top20, x='importance', y='feature', palette='viridis')
-    plt.title("Top 20 Most Important Features (LightGBM Gain)", fontsize=14, fontweight='bold')
+    sns.barplot(data=top20, x='importance', y='feature', palette='viridis', hue='feature', legend=False)
+    plt.title("Top 20 Most Important Features (XGBoost Gain)", fontsize=14, fontweight='bold')
     plt.xlabel("Total Gain Importance")
     plt.ylabel("Feature")
     plt.tight_layout()
@@ -221,7 +222,7 @@ def explain_and_plot(lgb_model, X_test, feature_cols, results):
 
     # 2. SHAP Explanation on a sample
     print("Computing SHAP values using TreeExplainer...")
-    explainer = shap.TreeExplainer(lgb_model)
+    explainer = shap.TreeExplainer(xgb_model)
     shap_sample = X_test.sample(n=min(2000, len(X_test)), random_state=42)
     shap_values = explainer(shap_sample)
 
